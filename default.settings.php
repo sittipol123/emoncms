@@ -6,8 +6,8 @@
 
     */
 
-    $username = "_DB_USER_";
-    $password = "_DB_PASSWORD_";
+    $username = "root";
+    $password = "";
     $server   = "localhost";
     $database = "emoncms";
 
@@ -24,13 +24,13 @@
         // Make sure that emoncms has write permission's to the datadirectory folders
         
         'phpfiwa'=>array(
-            'datadir'=>'/var/lib/phpfiwa/'
+            'datadir'=>'C:\\Users\\Fresh\\emoncmsdata\\phpfiwa\\'
         ),
         'phpfina'=>array(
-            'datadir'=>'/var/lib/phpfina/'
+            'datadir'=>'C:\\Users\\Fresh\\emoncmsdata\\phpfina\\'
         ),
         'phptimeseries'=>array(
-            'datadir'=>'/var/lib/phptimeseries/'
+            'datadir'=>'C:\\Users\\Fresh\\emoncmsdata\\phptimeseries\\'
         )
     );
     

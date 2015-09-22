@@ -56,6 +56,7 @@ function lang_http_accept()
             // No match
         }
     }
+    
     return $langs;
 }
 

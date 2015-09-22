@@ -193,7 +193,7 @@ function input_controller()
 
             if ($valid)
             {
-                $result = 'ok';
+                $result = 'ok xxxxxx great test';
             }
             else
             {
@@ -221,10 +221,10 @@ function input_controller()
 
             if (!$input->check_node_id_valid($nodeid))
             {
-
                 $valid = false;
                 $error = "NodeID must be a positive integer between 0 and ".$max_node_id_limit.", nodeid given was out of range";
             }
+
             if (!$valid)
             {
                 return array('content'=>"$error");
@@ -296,12 +296,14 @@ function input_controller()
 
         if ($route->action == "clean") $result = $input->clean($session['userid']);
         if ($route->action == "list") $result = $input->getlist($session['userid']);
+        if ($route->action == "getStatus") $result = $input->getliststatus($session['userid']);
         if ($route->action == "getinputs") $result = $input->get_inputs($session['userid']);
         if ($route->action == "getallprocesses") $result = $process->get_process_list();
 
         if (isset($_GET['inputid']) && $input->belongs_to_user($session['userid'],get("inputid")))
         {
             if ($route->action == "delete") $result = $input->delete($session['userid'],get("inputid"));
+
 
             if ($route->action == 'set') $result = $input->set_fields(get('inputid'),get('fields'));
 

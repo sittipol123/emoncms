@@ -122,7 +122,7 @@ class Input
         $userid = (int) $userid;
         $inputid = (int) $inputid;
 
-        $result = $this->mysqli->query("SELECT id FROM input WHERE userid = '$userid' AND id = '$inputid'");
+        $result = $this->mysqli->query("SELECT id FROM input WHERE userid = '$userid' or userid=0 AND id = '$inputid'");
         if ($result->fetch_array()) return true; else return false;
     }
 
@@ -148,7 +148,7 @@ class Input
         if (isset($fields->name)) $array[] = "`name` = '".preg_replace('/[^\w\s-.]/','',$fields->name)."'";
         // Convert to a comma seperated string for the mysql query
         $fieldstr = implode(",",$array);
-        $this->mysqli->query("UPDATE input SET ".$fieldstr." WHERE `id` = '$id'");
+        $this->mysqli->query("UPDATE input SET ".$fieldstr." WHERE `id` = '$id' ");
 
         // CHECK REDIS?
         // UPDATE REDIS
@@ -276,7 +276,36 @@ class Input
             return $this->mysql_get_inputs($userid);
         }
     }
+    public function get_status($userid)
+    {
+        return $this->mysql_get_status($userid);
+    }
+    public function get_inputsByNodeId($nodeid)
+    {
+        if ($this->redis) {
+            return $this->redis_get_inputs($nodeid);
+        } else {
+            return $this->mysql_get_inputs($nodeid);
+        }
+    }
+    // Device: redis input & user
+    public function redis_get_inputs_nodeid($nodeid)
+    {
+        if (!$this->redis->exists("device:inputs:$nodeid")) $this->load_to_redis_nodeid($nodeid);
 
+        $dbinputs = array();
+        $inputids = $this->redis->sMembers("device:inputs:$nodeid");
+
+        foreach ($inputids as $id)
+        {
+            $row = $this->redis->hGetAll("input:$id");
+            if ($row['nodeid']==null) $row['nodeid'] = 0;
+            if (!isset($dbinputs[$row['nodeid']])) $dbinputs[$row['nodeid']] = array();
+            $dbinputs[$row['nodeid']][$row['name']] = array('id'=>$row['id'], 'processList'=>$row['processList']);
+        }
+
+        return $dbinputs;
+    }
     // USES: redis input & user
     public function redis_get_inputs($userid)
     {
@@ -301,7 +330,7 @@ class Input
     {
         $userid = (int) $userid;
         $dbinputs = array();
-        $result = $this->mysqli->query("SELECT id,nodeid,name,description,processList FROM input WHERE `userid` = '$userid'");
+        $result = $this->mysqli->query("SELECT id,nodeid,name,description,processList FROM input WHERE `userid` = '$userid' or userid=0 ");
         while ($row = (array)$result->fetch_object())
         {
             if ($row['nodeid']==null) $row['nodeid'] = 0;
@@ -310,7 +339,19 @@ class Input
         }
         return $dbinputs;
     }
-
+    public function mysql_get_status($userid)
+    {
+        $userid = (int) $userid;
+        $dbinputs = array();
+        $result = $this->mysqli->query("SELECT id,nodeid,name,description,processList,value FROM input WHERE `userid` = '$userid' or userid=0 ");
+        while ($row = (array)$result->fetch_object())
+        {
+            if ($row['nodeid']==null) $row['nodeid'] = 0;
+            if (!isset($dbinputs[$row['nodeid']])) $dbinputs[$row['nodeid']] = array();
+            $dbinputs[$row['nodeid']][$row['name']] = array('id'=>$row['id'], 'processList'=>$row['processList'], 'value'=>$row['value']);
+        }
+        return $dbinputs;
+    }
     //-----------------------------------------------------------------------------------------------
     // This public function gets a users input list, its used to create the input/list page
     //-----------------------------------------------------------------------------------------------
@@ -321,6 +362,7 @@ class Input
         if ($this->redis) {
             return $this->redis_getlist($userid);
         } else {
+
             return $this->mysql_getlist($userid);
         }
     }
@@ -347,8 +389,7 @@ class Input
     {
         $userid = (int) $userid;
         $inputs = array();
-        
-        $result = $this->mysqli->query("SELECT id,nodeid,name,description,processList,time,value FROM input WHERE `userid` = '$userid'");
+        $result = $this->mysqli->query("SELECT id,nodeid,name,description,processList,time,value FROM input WHERE `userid` = '$userid' or userid=0");
         while ($row = (array)$result->fetch_object())
         {
             $row['time'] = strtotime($row['time']);
@@ -514,9 +555,25 @@ class Input
         ));
     }
 
+    private function load_to_redis_nodeid($nodeid)
+    {
+        $result = $this->mysqli->query("SELECT id,nodeid,name,description,processList FROM input WHERE `nodeid` = '$nodeid'");
+        while ($row = $result->fetch_object())
+        {
+            $this->redis->sAdd("device:inputs:$nodeid", $row->id);
+            $this->redis->hMSet("input:$row->id",array(
+                'id'=>$row->id,
+                'nodeid'=>$row->nodeid,
+                'name'=>$row->name,
+                'description'=>$row->description,
+                'processList'=>$row->processList
+            ));
+        }
+    }
+
     private function load_to_redis($userid)
     {
-        $result = $this->mysqli->query("SELECT id,nodeid,name,description,processList FROM input WHERE `userid` = '$userid'");
+        $result = $this->mysqli->query("SELECT id,nodeid,name,description,processList FROM input WHERE `userid` = '$userid' or userid=0");
         while ($row = $result->fetch_object())
         {
             $this->redis->sAdd("user:inputs:$userid", $row->id);

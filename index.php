@@ -11,8 +11,8 @@
     http://openenergymonitor.org
 
     */
-    
-    $emoncms_version = "8.5.0";
+header('Access-Control-Allow-Origin: *');
+$emoncms_version = "8.5.0";
     
     $ltime = microtime(true);
 
@@ -69,7 +69,6 @@
     elseif (isset($_POST['apikey']))
     {
         $session = $user->apikey_session($_POST['apikey']);
-
     }
     else
     {
@@ -127,17 +126,23 @@
 
     // $mysqli->close();
 
-    // 7) Output
+ // 7) Output
     if ($route->format == 'json')
     {
         header('Content-Type: application/json');
+
+        //
         if ($route->controller=='time') {
             print $output['content'];
+
         } elseif ($route->controller=='input' && $route->action=='post') {
-            print $output['content'];
+            //print $output['content'] ;
+            print "GREAT xxx";
         } elseif ($route->controller=='input' && $route->action=='bulk') {
             print $output['content'];
         } else {
+
+
             print json_encode($output['content']);
         }
     }
